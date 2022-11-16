@@ -38,7 +38,7 @@ Prerequisites:
 * Within this repo directory run:
 `$ mvn clean install`
 ### Configure Environment
-* Create a `.env` file. Please refer to [.env.sample](.env.sample)
+* Create a `.env` file. Please refer to [.env.sample](.env)
 ### Run
 * Via CLI:
 ```
