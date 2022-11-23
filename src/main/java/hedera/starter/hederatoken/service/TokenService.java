@@ -1,14 +1,14 @@
 package hedera.starter.hederatoken.service;
 
 import com.hedera.hashgraph.sdk.*;
+import hedera.starter.hederatoken.dto.TokenDto;
 
 import java.util.concurrent.TimeoutException;
 
 public interface TokenService {
     AccountId createAccount() throws PrecheckStatusException, TimeoutException, ReceiptStatusException;
 
-    TokenId createToken(String tokenName, String tokenSymbol,
-                        String firstSellerAccountId, String firstSellerPrivateKey)
+    TokenId createToken(TokenDto tokenDto)
             throws PrecheckStatusException, TimeoutException, ReceiptStatusException;
 
     TokenInfo getTokenInfo(String tokenId) throws PrecheckStatusException, TimeoutException;
@@ -20,14 +20,15 @@ public interface TokenService {
 
     String generatePrivateKey();
 
-    Status burnToken(String tokenId, Long serial, String supplyKey)
+    Status burnToken(TokenDto tokenDto)
             throws ReceiptStatusException, PrecheckStatusException, TimeoutException;
 
-    String associate(String tokenId, String buyerId, String buyerPrivateKey)
+    String associate(TokenDto tokenDto)
             throws ReceiptStatusException, PrecheckStatusException, TimeoutException;
 
-    Status firstSellerTransfer(String tokenId, Long serial, String sellerId,
-                    String buyerId,String buyerPrivateKey,  Long price)
+    String splitRoyality() throws PrecheckStatusException, TimeoutException, ReceiptStatusException;
+
+    Status firstSellerNftTransfer(TokenDto tokenDto)
             throws PrecheckStatusException, TimeoutException, ReceiptStatusException;
 
     //TODO
