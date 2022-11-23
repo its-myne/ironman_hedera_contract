@@ -22,7 +22,6 @@ public class TokenServiceImpl implements TokenService {
     private final Client client = HederaClient.getHederaClientInstance();
     private final PrivateKey supplyKey = PrivateKeys.getPrivateKeyInstance("supplyKey");
     private final PrivateKey adminKey = PrivateKeys.getPrivateKeyInstance("adminKey");
-    private final PrivateKey pauseKey = PrivateKeys.getPrivateKeyInstance("pauseKey");
     private final PrivateKey freezeKey = PrivateKeys.getPrivateKeyInstance("freezeKey");
     private final PrivateKey wipeKey = PrivateKeys.getPrivateKeyInstance("wipeKey");
 
@@ -187,26 +186,34 @@ public class TokenServiceImpl implements TokenService {
 
         Hbar balance = getBalance(treasureId.toString());
 
-        if (balance.getValue().longValue() > 2){
+        if (balance.getValue().longValue() > 10){
 
-            // minus 2 for gas fee etc
+            // minus 10 for gas fee etc
 
-            long splitHbar = balance.getValue().longValue() - 2L;
+            long splitHbar = balance.getValue().longValue() - 10L;
             double percent75 = splitHbar * 0.75;
             double percent25 = splitHbar * 0.25;
 
-            //Transfer HBAR
-            TransactionResponse sendFirstHbar = new TransferTransaction()
+            // First fee get 75 person
+            TransferTransaction transferFirstTransaction = new TransferTransaction()
                     .addHbarTransfer(treasureId, Hbar.from((long) -percent75)) //Sending account
                     .addHbarTransfer(firstFeeId, Hbar.from((long) percent75)) //Receiving account
-                    .execute(client);
-            log.info("The transfer firstFee transaction was: " +sendFirstHbar.getReceipt(client).status);
+                    .freezeWith(client)
+                    .sign(treasureKey);
+            TransferTransaction firstSign = transferFirstTransaction.sign(firstFeeKey);
+            TransactionResponse executeFirst = firstSign.execute(client);
+            log.info("The transfer firstFee transaction was: " + executeFirst.getReceipt(client).status);
 
-            TransactionResponse sendSecondHbar = new TransferTransaction()
+            // Second fee get 25 percent
+            TransferTransaction transferSecondTransaction = new TransferTransaction()
                     .addHbarTransfer(treasureId, Hbar.from((long) -percent25)) //Sending account
-                    .addHbarTransfer(firstFeeId, Hbar.from((long) percent25)) //Receiving account
-                    .execute(client);
-            log.info("The transfer secondFee transaction was: " +sendSecondHbar.getReceipt(client).status);
+                    .addHbarTransfer(secondId, Hbar.from((long) percent25)) //Receiving account
+                    .freezeWith(client)
+                    .sign(treasureKey);
+            TransferTransaction secondSign = transferSecondTransaction.sign(secondFeeKey);
+            TransactionResponse executeSecond = secondSign.execute(client);
+
+            log.info("The transfer secondFee transaction was: " + executeSecond.getReceipt(client).status);
         }
         return "Not enough Hbar for split";
     }
