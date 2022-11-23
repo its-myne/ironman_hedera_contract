@@ -1,18 +1,21 @@
-package hedera.starter.hederatoken;
+package hedera.starter.hederatoken.service.impl;
 
 import com.hedera.hashgraph.sdk.*;
+import hedera.starter.hederatoken.service.TokenService;
 import hedera.starter.utilities.HederaClient;
 import hedera.starter.utilities.PrivateKeys;
+import io.github.cdimascio.dotenv.Dotenv;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 import java.util.concurrent.TimeoutException;
 
 @Service
 @Slf4j
-public class TokenService {
+public class TokenServiceImpl implements TokenService {
 
     private final Client client = HederaClient.getHederaClientInstance();
     private final PrivateKey supplyKey = PrivateKeys.getPrivateKeyInstance("supplyKey");
@@ -27,18 +30,22 @@ public class TokenService {
 
         TransactionResponse newAccount = new AccountCreateTransaction()
                 .setKey(newAccountPublicKey)
-                .setInitialBalance( Hbar.fromTinybars(1000))
+                .setInitialBalance(Hbar.fromTinybars(1000))
                 .execute(client);
+
         AccountId newAccountId = newAccount.getReceipt(client).accountId;
-        log.info("New accountId: " + newAccountId.toString());
-        log.info("New account private key: " + newAccountPrivateKey.toString());
+        assert newAccountId != null;
+        log.info("New accountId: " + newAccountId);
+        log.info("New account private key: " + newAccountPrivateKey);
 
         return newAccountId;
     }
 
     public TokenId createToken(String tokenName, String tokenSymbol,
-                               String treasureAccountId, String treasurePrivateKey,
-                               String royaltyAccountID) throws PrecheckStatusException, TimeoutException, ReceiptStatusException {
+                               String firstSellerAccountId, String firstSellerPrivateKey) throws PrecheckStatusException, TimeoutException,
+            ReceiptStatusException {
+
+        AccountId royaltyAccountID = AccountId.fromString(Objects.requireNonNull(Dotenv.load().get("COMMON_TREASURE_ID")));
 
         TokenCreateTransaction nftCreate = new TokenCreateTransaction()
                 .setTokenName(tokenName)
@@ -46,21 +53,21 @@ public class TokenService {
                 .setTokenType(TokenType.NON_FUNGIBLE_UNIQUE)
                 .setDecimals(0)
                 .setInitialSupply(0)
-                .setTreasuryAccountId(AccountId.fromString(treasureAccountId))
+                .setTreasuryAccountId(AccountId.fromString(firstSellerAccountId))
                 .setSupplyType(TokenSupplyType.FINITE)
                 .setMaxSupply(10000)
-                .setCustomFees(nftCustomFee(AccountId.fromString(royaltyAccountID)))
-		        .setAdminKey(adminKey)
+                .setCustomFees(nftCustomFee(royaltyAccountID))
+                .setAdminKey(adminKey)
                 .setSupplyKey(supplyKey)
                 // .setPauseKey(pauseKey)
                 .setFreezeKey(freezeKey)
                 .setWipeKey(wipeKey)
                 .freezeWith(client)
-                .sign(PrivateKey.fromString(treasurePrivateKey));
+                .sign(PrivateKey.fromString(firstSellerPrivateKey));
 
 
-        TokenCreateTransaction nftCreateTxSign  = nftCreate.sign(adminKey);
-        TransactionResponse nftCreateSubmit  = nftCreateTxSign.execute(client);
+        TokenCreateTransaction nftCreateTxSign = nftCreate.sign(adminKey);
+        TransactionResponse nftCreateSubmit = nftCreateTxSign.execute(client);
         TransactionReceipt receipt = nftCreateSubmit.getReceipt(client);
         TokenId tokenId = receipt.tokenId;
         log.info("Created NFT with Token ID: " + tokenId);
@@ -72,26 +79,26 @@ public class TokenService {
         return new TokenInfoQuery().setTokenId(TokenId.fromString(tokenId)).execute(client);
     }
 
-    public TransactionReceipt tokenMint(String tokenId, String CID) throws PrecheckStatusException, TimeoutException, ReceiptStatusException {
+    public TransactionReceipt tokenMint(String tokenId, String contentId) throws PrecheckStatusException, TimeoutException, ReceiptStatusException {
 
         TokenMintTransaction tokenMintTransaction = new TokenMintTransaction()
                 .setTokenId(TokenId.fromString(tokenId))
-                .addMetadata(CID.getBytes())
+                .addMetadata(contentId.getBytes())
                 .freezeWith(client);
 
-        TokenMintTransaction mintTxSign  = tokenMintTransaction.sign(supplyKey);
-        TransactionResponse mintTxSubmit  = mintTxSign.execute(client);
+        TokenMintTransaction mintTxSign = tokenMintTransaction.sign(supplyKey);
+        TransactionResponse mintTxSubmit = mintTxSign.execute(client);
         TransactionReceipt mintRx = mintTxSubmit.getReceipt(client);
 
-        log.info("Created NFT "+ tokenId + " with serial: " + mintRx.serials.get(0));
+        log.info("Created NFT " + tokenId + " with serial: " + mintRx.serials.get(0));
 
         return mintRx;
     }
 
-    public List<CustomFee> nftCustomFee(AccountId treasureId){
+    private List<CustomFee> nftCustomFee(AccountId treasureId) {
         List<CustomFee> list = new ArrayList<>();
 
-        CustomFee customRoyaltyFee =  new CustomRoyaltyFee()
+        CustomFee customRoyaltyFee = new CustomRoyaltyFee()
                 .setNumerator(1)
                 .setDenominator(10)
                 .setFeeCollectorAccountId(treasureId)
@@ -108,12 +115,13 @@ public class TokenService {
         return execute.hbars;
     }
 
-    public String generatePrivateKey(){
+    public String generatePrivateKey() {
         return PrivateKey.generateED25519().toString();
     }
 
 
-    public Status burnToken(String tokenId, Long serial, String supplyKey) throws ReceiptStatusException, PrecheckStatusException, TimeoutException {
+    public Status burnToken(String tokenId, Long serial, String supplyKey)
+            throws ReceiptStatusException, PrecheckStatusException, TimeoutException {
         TokenBurnTransaction burnTransaction = new TokenBurnTransaction().setTokenId(TokenId.fromString(tokenId))
                 .setSerials(List.of(serial))
                 .freezeWith(client)
@@ -126,7 +134,8 @@ public class TokenService {
         return receipt.status;
     }
 
-    public String associate(String tokenId, String buyerId, String buyerPrivateKey) throws ReceiptStatusException, PrecheckStatusException, TimeoutException {
+    public String associate(String tokenId, String buyerId, String buyerPrivateKey)
+            throws ReceiptStatusException, PrecheckStatusException, TimeoutException {
         TokenAssociateTransaction associateBuyer = new TokenAssociateTransaction()
                 .setAccountId(AccountId.fromString(buyerId))
                 .setTokenIds(List.of(TokenId.fromString(tokenId)))
@@ -138,10 +147,12 @@ public class TokenService {
         return receipt.status.toString();
     }
 
-    public Status transfer(String tokenId, Long serial, String sellerId,
-                           String buyerId,String buyerPrivateKey,  Long price) throws PrecheckStatusException, TimeoutException, ReceiptStatusException {
+    public Status firstSellerTransfer(String tokenId, Long serial, String sellerId,
+                                      String buyerId, String buyerPrivateKey, Long price)
+            throws PrecheckStatusException, TimeoutException, ReceiptStatusException {
 
         AccountId sellerAccount = AccountId.fromString(sellerId);
+        PrivateKey sellerKey = PrivateKey.fromString(Objects.requireNonNull(Dotenv.load().get("FIRST_SELLER_KEY")));
         AccountId buyerAccount = AccountId.fromString(buyerId);
 
         TransferTransaction tokenTransferTx2 = new TransferTransaction()
@@ -151,15 +162,13 @@ public class TokenService {
                 .addHbarTransfer(sellerAccount, Hbar.from(price))
                 .addHbarTransfer(buyerAccount, Hbar.from(-price))
                 .freezeWith(client)
-                .sign(PrivateKey.fromString(
-                        "302e020100300506032b65700422042004eb066e98fd9b6e7ca925b7cc822db6db221e5bc1cd7cdf26ec46b925869b18"
-                ));
+                .sign(sellerKey);
 
-        TransferTransaction tokenTransferTx2Sign  = tokenTransferTx2.sign(PrivateKey.fromString(buyerPrivateKey));
-        TransactionResponse tokenTransferSubmit2  = tokenTransferTx2Sign.execute(client);
-        TransactionReceipt tokenTransferRx2 = tokenTransferSubmit2.getReceipt(client);
+        TransferTransaction tokenTransferTx2Sign = tokenTransferTx2.sign(PrivateKey.fromString(buyerPrivateKey));
+        TransactionResponse tokenTransferSubmit = tokenTransferTx2Sign.execute(client);
+        TransactionReceipt tokenTransferRx2 = tokenTransferSubmit.getReceipt(client);
 
-        System.out.println("NFT transfer Alice->Bob status" + tokenTransferRx2.status);
+        log.info("NFT transfer " + sellerId + " to " + buyerId + " STATUS :" + tokenTransferRx2.status);
 
         return tokenTransferRx2.status;
     }

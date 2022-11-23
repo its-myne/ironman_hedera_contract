@@ -1,8 +1,10 @@
-package hedera.starter.hederatoken;
+package hedera.starter.hederatoken.controller;
 
 import com.hedera.hashgraph.sdk.*;
+import hedera.starter.hederatoken.service.TokenService;
+import hedera.starter.hederatoken.service.impl.TokenServiceImpl;
 import io.swagger.annotations.Api;
-import org.springframework.scheduling.annotation.Scheduled;
+import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.concurrent.TimeoutException;
@@ -10,20 +12,16 @@ import java.util.concurrent.TimeoutException;
 @RestController
 @Api("Handles management of Hedera Accounts")
 @RequestMapping(path = "/token")
+@RequiredArgsConstructor
 public class HederaTokenController {
 
     private final TokenService tokenService;
 
-    public HederaTokenController(TokenService tokenService) {
-        this.tokenService = tokenService;
-    }
-
     @PostMapping()
     public TokenId createToken(@RequestParam String tokenName, @RequestParam String tokenSymbol,
-                               @RequestParam String treasureId, @RequestParam String privateKey,
-                               @RequestParam String royaltyId)
+                               @RequestParam String firstSellerAccountId, @RequestParam String firstSellerPrivateKey)
             throws ReceiptStatusException, PrecheckStatusException, TimeoutException {
-        return tokenService.createToken(tokenName, tokenSymbol, treasureId, privateKey, royaltyId);
+        return tokenService.createToken(tokenName, tokenSymbol, firstSellerAccountId, firstSellerPrivateKey);
     }
 
     @PostMapping("/createAccount")
@@ -38,8 +36,8 @@ public class HederaTokenController {
 
     @GetMapping("/mint")
     public TransactionReceipt mintToken(@RequestParam String tokenId,
-                                        @RequestParam String CID) throws ReceiptStatusException, PrecheckStatusException, TimeoutException {
-        return tokenService.tokenMint(tokenId, CID);
+                                        @RequestParam String contentId) throws ReceiptStatusException, PrecheckStatusException, TimeoutException {
+        return tokenService.tokenMint(tokenId, contentId);
     }
 
     @GetMapping("/balance")
@@ -65,12 +63,11 @@ public class HederaTokenController {
     }
 
 
-
     @GetMapping("/transferNft")
     public Status transferNft(@RequestParam String tokenId, @RequestParam Long serial,
                               @RequestParam String sellerId, @RequestParam String buyerId,
                               @RequestParam String buyerPrivateKey, @RequestParam Long price) throws ReceiptStatusException, PrecheckStatusException, TimeoutException {
-        return tokenService.transfer(tokenId, serial, sellerId, buyerId, buyerPrivateKey, price);
+        return tokenService.firstSellerTransfer(tokenId, serial, sellerId, buyerId, buyerPrivateKey, price);
     }
 
 }
