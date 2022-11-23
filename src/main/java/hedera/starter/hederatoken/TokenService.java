@@ -21,6 +21,21 @@ public class TokenService {
     private final PrivateKey freezeKey = PrivateKeys.getPrivateKeyInstance("freezeKey");
     private final PrivateKey wipeKey = PrivateKeys.getPrivateKeyInstance("wipeKey");
 
+    public AccountId createAccount() throws PrecheckStatusException, TimeoutException, ReceiptStatusException {
+        PrivateKey newAccountPrivateKey = PrivateKey.generateED25519();
+        PublicKey newAccountPublicKey = newAccountPrivateKey.getPublicKey();
+
+        TransactionResponse newAccount = new AccountCreateTransaction()
+                .setKey(newAccountPublicKey)
+                .setInitialBalance( Hbar.fromTinybars(1000))
+                .execute(client);
+        AccountId newAccountId = newAccount.getReceipt(client).accountId;
+        log.info("New accountId: " + newAccountId.toString());
+        log.info("New account private key: " + newAccountPrivateKey.toString());
+
+        return newAccountId;
+    }
+
     public TokenId createToken(String tokenName, String tokenSymbol,
                                String treasureAccountId, String treasurePrivateKey,
                                String royaltyAccountID) throws PrecheckStatusException, TimeoutException, ReceiptStatusException {
@@ -111,5 +126,42 @@ public class TokenService {
         return receipt.status;
     }
 
+    public String associate(String tokenId, String buyerId, String buyerPrivateKey) throws ReceiptStatusException, PrecheckStatusException, TimeoutException {
+        TokenAssociateTransaction associateBuyer = new TokenAssociateTransaction()
+                .setAccountId(AccountId.fromString(buyerId))
+                .setTokenIds(List.of(TokenId.fromString(tokenId)))
+                .freezeWith(client)
+                .sign(PrivateKey.fromString(buyerPrivateKey));
+        TransactionResponse associateSubmit = associateBuyer.execute(client);
+        TransactionReceipt receipt = associateSubmit.getReceipt(client);
+        log.info(buyerId + "NFT Manual Association:" + receipt.status);
+        return receipt.status.toString();
+    }
+
+    public Status transfer(String tokenId, Long serial, String sellerId,
+                           String buyerId,String buyerPrivateKey,  Long price) throws PrecheckStatusException, TimeoutException, ReceiptStatusException {
+
+        AccountId sellerAccount = AccountId.fromString(sellerId);
+        AccountId buyerAccount = AccountId.fromString(buyerId);
+
+        TransferTransaction tokenTransferTx2 = new TransferTransaction()
+                .addNftTransfer(new NftId(TokenId.fromString(tokenId), serial),
+                        sellerAccount,
+                        buyerAccount)
+                .addHbarTransfer(sellerAccount, Hbar.from(price))
+                .addHbarTransfer(buyerAccount, Hbar.from(-price))
+                .freezeWith(client)
+                .sign(PrivateKey.fromString(
+                        "302e020100300506032b65700422042004eb066e98fd9b6e7ca925b7cc822db6db221e5bc1cd7cdf26ec46b925869b18"
+                ));
+
+        TransferTransaction tokenTransferTx2Sign  = tokenTransferTx2.sign(PrivateKey.fromString(buyerPrivateKey));
+        TransactionResponse tokenTransferSubmit2  = tokenTransferTx2Sign.execute(client);
+        TransactionReceipt tokenTransferRx2 = tokenTransferSubmit2.getReceipt(client);
+
+        System.out.println("NFT transfer Alice->Bob status" + tokenTransferRx2.status);
+
+        return tokenTransferRx2.status;
+    }
 
 }
