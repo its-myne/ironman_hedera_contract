@@ -1,0 +1,243 @@
+{
+	"info": {
+		"_postman_id": "78128b49-9953-45f0-ae0d-8c53c7a34c24",
+		"name": "hedera",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"item": [
+		{
+			"name": "treasure",
+			"item": [
+				{
+					"name": "Create token",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n    \"tokenName\":\"Danik\",\r\n    \"tokenSymbol\":\"MDU\",\r\n    \"firstSellerAccountId\":\"0.0.48907605\",\r\n    \"firstSellerPrivateKey\":\"302e020100300506032b65700422042004eb066e98fd9b6e7ca925b7cc822db6db221e5bc1cd7cdf26ec46b925869b18\"\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "localhost:8080/token",
+							"host": [
+								"localhost"
+							],
+							"port": "8080",
+							"path": [
+								"token"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "getTokenInfo",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "localhost:8080/token/info?tokenId=0.0.48950182",
+							"host": [
+								"localhost"
+							],
+							"port": "8080",
+							"path": [
+								"token",
+								"info"
+							],
+							"query": [
+								{
+									"key": "tokenId",
+									"value": "0.0.48950182"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "minting",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "http://35.78.84.201:8080/token/mint?tokenId=0.0.48950182&CID=ipfs://bafyreia34awv7lszb7nia2yiwsbbbefdkbr3buo22wbgk3mwwmuhk2rsby/metadata.json",
+							"protocol": "http",
+							"host": [
+								"35",
+								"78",
+								"84",
+								"201"
+							],
+							"port": "8080",
+							"path": [
+								"token",
+								"mint"
+							],
+							"query": [
+								{
+									"key": "tokenId",
+									"value": "0.0.48950182"
+								},
+								{
+									"key": "CID",
+									"value": "ipfs://bafyreia34awv7lszb7nia2yiwsbbbefdkbr3buo22wbgk3mwwmuhk2rsby/metadata.json"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "checkBalance",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "localhost:8080/token/balance?accountId=0.0.48907597",
+							"host": [
+								"localhost"
+							],
+							"port": "8080",
+							"path": [
+								"token",
+								"balance"
+							],
+							"query": [
+								{
+									"key": "accountId",
+									"value": "0.0.48907597"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "GeneratePrivateKey",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "localhost:8080/token/generatePrivateKey",
+							"host": [
+								"localhost"
+							],
+							"port": "8080",
+							"path": [
+								"token",
+								"generatePrivateKey"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Associate",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n    \"tokenId\":\"0.0.48950182\",\r\n    \"buyerId\":\"0.0.48907680\",\r\n    \"buyerPrivateKey\":\"302e020100300506032b6570042204209a15188f29baa875049ac8ed292881de7ded6d14a98e999d3cb48b1b472ee814\"\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "localhost:8080/token/associate",
+							"host": [
+								"localhost"
+							],
+							"port": "8080",
+							"path": [
+								"token",
+								"associate"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Create account",
+					"request": {
+						"method": "GET",
+						"header": []
+					},
+					"response": []
+				},
+				{
+					"name": "firstSellerNftTransfer",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n    \"firstSellerAccountId\":\"\",\r\n    \"buyerId\":\"\",\r\n    \"buyerPrivateKey\":\"\",\r\n    \"tokenId\":\"\",\r\n    \"serial\" ,\r\n    \"price\": \r\n\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "localhost:8080/token/firstSellerNftTransfer",
+							"host": [
+								"localhost"
+							],
+							"port": "8080",
+							"path": [
+								"token",
+								"firstSellerNftTransfer"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Burn Token",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n    \"tokenId\":\"\",\r\n    \"serial\":1,\r\n    \"supplyKey\":\"\"\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "localhost:8080/token/burnToken",
+							"host": [
+								"localhost"
+							],
+							"port": "8080",
+							"path": [
+								"token",
+								"burnToken"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "New Request",
+					"request": {
+						"method": "GET",
+						"header": []
+					},
+					"response": []
+				}
+			]
+		}
+	]
+}
