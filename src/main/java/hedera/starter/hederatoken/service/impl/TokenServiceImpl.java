@@ -186,7 +186,7 @@ public class TokenServiceImpl implements TokenService {
 
         Hbar balance = getBalance(treasureId.toString());
 
-        if (balance.getValue().longValue() > 10){
+        if (balance.getValue().longValue() > 10) {
 
             // minus 10 for gas fee etc
 
@@ -226,13 +226,13 @@ public class TokenServiceImpl implements TokenService {
             String buyerPrivateKey = tokenDto.getBuyerPrivateKey();
             String tokenId = tokenDto.getTokenId();
             Long serial = tokenDto.getSerial();
-            Long price  = tokenDto.getPrice();
+            Long price = tokenDto.getPrice();
 
             AccountId sellerAccount = AccountId.fromString(sellerId);
             PrivateKey sellerKey = PrivateKey.fromString(Objects.requireNonNull(Dotenv.load().get("FIRST_SELLER_KEY")));
             AccountId buyerAccount = AccountId.fromString(buyerId);
 
-            TransferTransaction tokenTransferTx= new TransferTransaction()
+            TransferTransaction tokenTransferTx = new TransferTransaction()
                     .addNftTransfer(new NftId(TokenId.fromString(tokenId), serial),
                             sellerAccount,
                             buyerAccount)
@@ -252,4 +252,50 @@ public class TokenServiceImpl implements TokenService {
         return null;
     }
 
+    @Override
+    public Status buyWithAllowance(TokenDto tokenDto) throws PrecheckStatusException, TimeoutException, ReceiptStatusException {
+        if (tokenDto != null) {
+            String sellerId = tokenDto.getFirstSellerAccountId();
+            String buyerId = tokenDto.getBuyerId();
+            String buyerPrivateKey = tokenDto.getBuyerPrivateKey();
+            String tokenId = tokenDto.getTokenId();
+            Long serial = tokenDto.getSerial();
+            Long price = tokenDto.getPrice();
+
+            AccountId sellerAccount = AccountId.fromString(sellerId);
+            AccountId buyerAccount = AccountId.fromString(buyerId);
+
+            AccountAllowanceApproveTransaction transaction =
+                    new AccountAllowanceApproveTransaction()
+                            .approveHbarAllowance(buyerAccount, sellerAccount, Hbar.from(price));
+
+            TransactionResponse execute = transaction.freezeWith(client)
+                    .sign(PrivateKey.fromString(buyerPrivateKey))
+                    .execute(client);
+
+            TransactionReceipt receipt = execute.getReceipt(client);
+
+            Status transactionStatus = receipt.status;
+            log.info("Allowance from buyer : " + transactionStatus);
+
+            TransactionResponse tokenTransferRs = new TransferTransaction()
+                    .addNftTransfer(new NftId(TokenId.fromString(tokenId), serial),
+                            sellerAccount,
+                            buyerAccount)
+                    .addHbarTransfer(sellerAccount, Hbar.from(price))
+                    .addHbarTransfer(buyerAccount, Hbar.from(price).negated())
+                    .freezeWith(client)
+                    .sign(PrivateKey.fromString(buyerPrivateKey))
+                    .execute(client);
+
+            TransactionReceipt receiptTransfer = tokenTransferRs.getReceipt(client);
+            Status transactionStatusTransfer = receiptTransfer.status;
+
+            log.info("The transaction consensus status is " +transactionStatusTransfer);
+
+            return transactionStatus;
+
+        }
+        return null;
+    }
 }

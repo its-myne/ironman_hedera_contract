@@ -74,4 +74,9 @@ public class HederaTokenController {
         return tokenService.firstSellerNftTransfer(tokenDto);
     }
 
+    @PostMapping("/buyWithAllowance")
+    public Status buyWithAllowance(@RequestBody TokenDto tokenDto) throws ReceiptStatusException, PrecheckStatusException, TimeoutException {
+        return tokenService.buyWithAllowance(tokenDto);
+    }
+
 }

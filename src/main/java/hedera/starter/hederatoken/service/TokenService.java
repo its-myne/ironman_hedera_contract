@@ -34,4 +34,6 @@ public interface TokenService {
     //TODO
     // second marketplace I will be use scheduled transaction,
     // at the moment second seller can sell by secureTrade Hashpack wallet
+    // I used allowance instead of scheduled transaction
+    Status buyWithAllowance(TokenDto tokenDto) throws PrecheckStatusException, TimeoutException, ReceiptStatusException;
 }
